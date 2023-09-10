@@ -2,6 +2,7 @@ from django.db import models
 from .services import CustomDuration
 from django.utils.text import slugify
 from django.contrib.auth.models import User
+from django.utils import timezone
 # Create your models here.
 
 
@@ -68,3 +69,32 @@ class Otp(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     otp = models.CharField(max_length=6, null=True, blank=True)
     otp_validated = models.BooleanField(default=False, blank=True)
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_profile', null=True, blank=True)
+    purchased_exams = models.ManyToManyField(Exam, blank=True, related_name='purchased_exams')
+
+    def __str__(self) -> str:
+        return f"{self.user}"
+    
+class PurchasedDate(models.Model):
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='purchased_dates')
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='purchased_dates', null=True, blank=True)
+    date_of_purchase = models.DateTimeField(default=timezone.now)
+    expiration_date = models.DateTimeField()
+
+    def __str__(self) -> str:
+        return f"PurchasedDate for {self.user_profile}, Exam: {self.exam}"
+    
+class UserResponse(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='userresponse')
+    exam_id = models.CharField(max_length=50)
+    response = models.JSONField(default=dict)
+    marks_scored = models.CharField(max_length=4, default='00')
+    #  {
+    # "1": "A",
+    # "2": "C",
+    # "3": "B"
+    # }
+    def __str__(self) -> str:
+        return f"{self.userprofile.username}-{self.exam_id}"

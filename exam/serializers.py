@@ -1,47 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Exam, Questions
-
-
-#serializer to validate the userregistration data.
-class UserSerializer(serializers.ModelSerializer):
-    password = serializers.RegexField(
-        regex=r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",
-        max_length=128,
-        min_length=8,
-        write_only=True,
-        error_messages={
-            'invalid': 'Password must contain at least 8 characters, including uppercase, lowercase, and numeric characters.'
-        }
-    )
-
-    confirm_password = serializers.CharField(write_only=True)
-
-    username = serializers.RegexField(regex='PRP', help_text = 'Username should be your college reg-number starting with PRP')
-
-    class Meta:
-        model = User
-        fields = ['first_name', 'last_name', 'username', 'email','password', 'confirm_password']
-
-    def validate(self, data):
-        if data['password'] != data['confirm_password']:
-            raise serializers.ValidationError('Password Mismatch')
-        return data
-    
-    def create(self, validated_data):
-        validated_data.pop('confirm_password')
-        user = User.objects.create_user(
-            first_name = validated_data['first_name'],
-            last_name = validated_data['last_name'],
-            username = validated_data['username'],
-            password = validated_data['password']
-        )
-        return user
+from .models import Exam, Questions, PurchasedDate, UserProfile, UserResponse
 
 
 #validate data of regular user login.
 class RegularUserLoginSerializer(serializers.Serializer):
-    username = serializers.EmailField()
+    username = serializers.RegexField(regex='PRP', help_text = 'Username should be your college reg-number starting with PRP')
     password = serializers.CharField(max_length=128)
 
 
@@ -57,10 +21,11 @@ class AdminRegistrationSerializer(serializers.ModelSerializer):
         }
     )
     confirm_password = serializers.CharField(write_only=True)
+    username = serializers.EmailField(help_text = 'Enter Email id as username')
 
     class Meta:
         model = User
-        fields = ['name', 'username', 'password', 'confirm_password']
+        fields = ['first_name','last_name' , 'username', 'password', 'confirm_password']
         default_related_name = 'admin_users'
 
     def validate(self, data):
@@ -73,7 +38,9 @@ class AdminRegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create_superuser(
             username=validated_data['username'],
             password=validated_data['password'],
-            name=validated_data['name']
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+
         )
         return user
     
@@ -90,12 +57,14 @@ class ExamSerializer(serializers.ModelSerializer):
         model = Exam
         fields = ['id', 'exam_id','exam_name', 'duration', 'instructions', 'questions', 'total_marks', 'qualify_score', 'is_active', 'created_date', 'updated_date']
 
+
 class QuestionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Questions
         fields = ['id', 'questions_text', 'questions_image', 'optionA_text', 'optionA_image', 'optionB_text', 'optionB_image', 'optionC_text', 'optionC_image', 'optionD_text', 'optionD_image', 'choose', 'answer', 'solution_text', 'solution_image']
     
+
 class AddQuestionstoExamSerializer(serializers.Serializer):
     exam_id = serializers.CharField(max_length = 6, min_length = 6)
 
@@ -114,11 +83,13 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError('Password mismatch')
         return data
 
+
 #valildates the email entered for sending otp.
 class ResetPasswordEmailSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     class Meta:
         fields = ['email']
+
 
 # validates the password entered for changing password.
 class ResetPasswordSerializer(serializers.Serializer):
@@ -141,6 +112,87 @@ class ResetPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError('password mismatch')
         return data
         
+
 #validates if the otp entered is correct.
 class CheckOTPSerializer(serializers.Serializer):
     otp = serializers.CharField(min_length = 6, max_length = 6)
+
+
+class PurchasedDateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PurchasedDate
+        fields = ['date_of_purchase','expiration_date']
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    purchased_exams = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = ['purchased_exams']
+
+
+    def get_purchased_exams(self, obj):
+        purchased_dates = obj.purchased_dates.filter(exam__isnull=False)
+        serialized_purchased_exams = []
+        for purchased_date in purchased_dates:
+            serialized_purchased_exams.append({
+                'exam_id': purchased_date.exam.exam_id,
+                'date_of_purchase': purchased_date.date_of_purchase,
+                'expiration_date': purchased_date.expiration_date,
+            })
+        return serialized_purchased_exams
+    
+
+class UserResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserResponse
+        fields = ['exam_id','response','marks_scored']
+
+
+#serializer to validate the userregistration data.
+class UserSerializer(serializers.ModelSerializer):
+    password = serializers.RegexField(
+        regex=r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",
+        max_length=128,
+        min_length=8,
+        write_only=True,
+        error_messages={
+            'invalid': 'Password must contain at least 8 characters, including uppercase, lowercase, and numeric characters.'
+        }
+    )
+
+    confirm_password = serializers.CharField(write_only=True)
+
+    username = serializers.RegexField(regex='PRP', help_text = 'Username should be your college reg-number starting with PRP')
+
+    purchase_list = UserProfileSerializer(source = 'user_profile', read_only = True)
+    exam_response = UserResponseSerializer(read_only = True)
+    
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'username', 'email','password', 'confirm_password', 'purchase_list', 'exam_response']
+        default_related_name = 'regular_users'
+    
+    def to_representation(self, instance):
+        # Include the logged-in user's exam responses in the representation
+        representation = super().to_representation(instance)
+        user_responses = instance.userresponse.all()
+        exam_response_serializer = UserResponseSerializer(user_responses, many=True)
+        representation['exam_response'] = exam_response_serializer.data
+        return representation
+
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError('Password Mismatch')
+        return data
+    
+    def create(self, validated_data):
+        validated_data.pop('confirm_password')
+        user = User.objects.create_user(
+            first_name = validated_data['first_name'],
+            last_name = validated_data['last_name'],
+            username = validated_data['username'],
+            password = validated_data['password']
+        )
+        return user

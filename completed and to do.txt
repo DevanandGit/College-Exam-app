@@ -1,14 +1,14 @@
 1.userRegistration, login, logout
 2.AdminRegistration, login, logout
-3.Questions add, listview, 
-4.Exam add, listview, 
+3.Questions add, listview, detailview
+4.Exam add, listview, detailview
 5.Add questions automatically to exams
+6.purchased exams
 7.change password, reset password using mailing otp system.
+8.UserProfiles.
+
 
 to-do:
-1.Questions detailview--pending
-2.Exam detailview--pending
 3.new Mail id for this otp sending need to create.
 4.answer validating system
-5.UserProfiles.
-6.purchased exams
+

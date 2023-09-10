@@ -2,9 +2,10 @@ from django.shortcuts import render
 from .serializers import (UserSerializer, QuestionSerializer, ExamSerializer, 
                           RegularUserLoginSerializer, AdminRegistrationSerializer,
                           AdminLoginSerializer, AddQuestionstoExamSerializer,
-                          ChangePasswordSerializer,ResetPasswordEmailSerializer,ResetPasswordSerializer,CheckOTPSerializer)
-from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveDestroyAPIView, GenericAPIView
-from .models import Questions, Exam, Otp
+                          ChangePasswordSerializer,ResetPasswordEmailSerializer,ResetPasswordSerializer,CheckOTPSerializer,
+                          UserProfileSerializer, UserResponseSerializer)
+from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveDestroyAPIView, GenericAPIView, RetrieveAPIView, ListAPIView
+from .models import Questions, Exam, Otp, UserProfile, PurchasedDate, UserResponse
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -122,29 +123,29 @@ class AdminLogoutView(APIView):
 #Admin accessible views.
 #View to create and List created Questions.
 class QuestionListCreateAPIView(ListCreateAPIView):
-    # permission_classes = [IsAdminUser]
-    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
     serializer_class = QuestionSerializer
     queryset = Questions.objects.all()
     
 #View to Look Questions in detail and Delete created Questions.
 class QuestionRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    # permission_classes = [IsAdminUser]
-    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
     serializer_class = QuestionSerializer
     queryset = Questions.objects.all()
     lookup_field = 'id'
 
 #View to create and List created Exams.
 class ExamListCreateAPIView(ListCreateAPIView):
-    permission_classes = [IsAdminUser]
-    authentication_classes = [TokenAuthentication]
+    Authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = ExamSerializer
     queryset = Exam.objects.all()
 
 #View to Look Questions in detail and Delete created Exams.
 class ExamRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     serializer_class = ExamSerializer
     queryset = Exam.objects.all()
@@ -171,6 +172,42 @@ class AddQuestionstoExam(APIView):
 
         return Response(response, status=status.HTTP_200_OK)
 
+
+#view to assign a exam to a user.
+class AssignExam(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    def post(self, request):
+        #get exam id and username of the user.
+        username = request.data.get('username')
+        exam_id = request.data.get('exam_id')
+        
+        #get associated user and exam
+        try:
+            exam = Exam.objects.get(exam_id = exam_id)
+            print(exam)
+            user = User.objects.get(username = username)
+            print(user)
+        except User.DoesNotExist:
+            return Response("User not found", status=status.HTTP_404_NOT_FOUND)
+        except Exam.DoesNotExist:
+            return Response("Exam not found", status=status.HTTP_404_NOT_FOUND)
+                
+        duration = int(request.data.get('duration')) #duration in days
+        
+        date_of_purchase = timezone.now()
+        expiration_date = date_of_purchase + timezone.timedelta(days=duration)
+
+        user_profile, created = UserProfile.objects.get_or_create(user = user)
+        user_profile.purchased_exams.add(exam)
+
+        purchased_date = PurchasedDate.objects.create(user_profile=user_profile,
+                                                      exam = exam, 
+                                                        date_of_purchase=timezone.now(),
+                                                        expiration_date = expiration_date)
+        purchased_date.save()
+
+        return Response("Exam purchased successfully", status=status.HTTP_200_OK)
 
 # view to change password by user
 class ChangePasswordView(APIView):
@@ -277,3 +314,58 @@ class ResetPasswordView(APIView):
 
         else:
             return Response({'success':False, 'message':"verify OTP First"}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+#User Profile View.
+class UserProfileView(RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    serializer_class = UserSerializer
+    lookup_field = 'username'
+    def get_queryset(self):
+        # Only allow the user to access their own instance
+        print(self.request.user)
+        return User.objects.filter(username=self.request.user.username)
+
+#show the purchased history.
+class PurchaseHistoryView(ListAPIView):
+    serializer_class = UserProfileSerializer
+    lookup_field = 'username'
+    def get_queryset(self): 
+        return UserProfile.objects.filter(user = self.request.user)
+    
+#view to add ExamResponse of User.
+class UserExamResponseAdd(APIView):
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        user = request.user
+        serializer = UserResponseSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        exam_id = validated_data.get('exam_id')
+        response_data = validated_data.get('response')
+        marks_scored = validated_data.get('marks_scored', '00')
+        
+        try:
+            user_response = UserResponse.objects.create(
+                user=user,
+                exam_id=exam_id,
+                response=response_data,
+                marks_scored=marks_scored,
+            )
+
+            response = {
+                "message": "User response added successfully",
+                'data': {
+                    'exam_id': exam_id,
+                    'response': response_data,
+                    'marks_scored': marks_scored,
+                },
+                'status': status.HTTP_201_CREATED
+            }
+            return Response(response, status=status.HTTP_201_CREATED)
+
+        except:
+            return Response("User not found", status=status.HTTP_401_UNAUTHORIZED)
