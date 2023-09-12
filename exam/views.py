@@ -129,46 +129,46 @@ class AdminLogoutView(APIView):
 #Admin accessible views.
 #View to create and List created Questions.
 class QuestionListCreateAPIView(ListCreateAPIView):
-    # permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
     serializer_class = QuestionSerializer
     queryset = Questions.objects.all()
     
 #View to Look Questions in detail and Delete created Questions.
 class QuestionRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    # permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
     serializer_class = QuestionSerializer
     queryset = Questions.objects.all()
     lookup_field = 'id'
 
 #View to create and List created Exams.
 class ExamListCreateAPIView(ListCreateAPIView):
-    # Authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    Authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = ExamSerializer
     queryset = Exam.objects.all()
 
 #View to Look Questions in detail and Delete created Exams.
 class ExamRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    # permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
     serializer_class = ExamSerializer
     queryset = Exam.objects.all()
     lookup_field = 'exam_id'
 
 #View to create and List created QuestionType
 class QuestionTypeListCreateAPIView(ListCreateAPIView):
-    # Authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    Authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     serializer_class = QuestionTypeSerializer
     queryset = QuestionType.objects.all()
 
 
 #View to Look Questions in detail and Delete created QuestionType
 class QuestionTypeRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    # permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    authentication_classes = [TokenAuthentication]
     serializer_class = QuestionTypeSerializer
     queryset = QuestionType.objects.all()
     lookup_field = 'id'
@@ -176,22 +176,24 @@ class QuestionTypeRetrieveDestroyAPIView(RetrieveDestroyAPIView):
 
 #View to create and List created DifficultyLevel
 class DifficultyLevelListCreateAPIView(ListCreateAPIView):
-    # Authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    Authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     serializer_class = DifficultyLevelSerializer
     queryset = DifficultyLevel.objects.all()
 
 
 #View to Look Questions in detail and Delete created DifficultyLevel
 class DifficultyLevelRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    # permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    authentication_classes = [TokenAuthentication]
     serializer_class = DifficultyLevelSerializer
     queryset = DifficultyLevel.objects.all()
     lookup_field = 'id'
     
 #View to add questions to exams randomnly
 class AddQuestionstoExam(APIView):
+    permission_classes = [IsAdminUser]
+    authentication_classes = [TokenAuthentication]
     serializer_class = AddQuestionstoExamSerializer
 
     def post(self, request):
@@ -387,8 +389,8 @@ class PurchaseHistoryView(ListAPIView):
     
 #view to add ExamResponse of User.
 class UserExamResponseAdd(APIView):
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     
     def post(self, request):
         user = request.user
