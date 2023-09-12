@@ -5,9 +5,31 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 # Create your models here.
 
+# Here I used Django's builtin User model to store users. It has one-to-one relation with UserProfile.
 
+#model to add Difficulty level
+class DifficultyLevel(models.Model):
+    id = models.AutoField(unique=True, primary_key=True)
+    difficulty_level = models.CharField(max_length=20)
+
+    def __str__(self) -> str:
+        return f"{self.difficulty_level}"
+
+
+#model to add Question Type
+class QuestionType(models.Model):
+    id = models.AutoField(unique=True, primary_key=True)
+    question_type = models.CharField(max_length=50)
+
+    def __str__(self) -> str:
+        return f"{self.question_type}"
+
+
+#model to add Questions
 class Questions(models.Model):
     id = models.BigAutoField(unique=True, primary_key=True)
+    difficulty_level = models.ForeignKey(DifficultyLevel, on_delete=models.SET_NULL, null=True)
+    question_type = models.ForeignKey(QuestionType, on_delete=models.SET_NULL, null=True)
     questions_text = models.TextField(blank=True, null=True)
     questions_image = models.ImageField(upload_to='images/', blank=True, null=True) #need to specify the destination in settings.py
     optionA_text = models.TextField(blank=True, null=True)
@@ -23,7 +45,6 @@ class Questions(models.Model):
     solution_text = models.TextField(blank=True, null=True, editable=False)
     solution_image = models.ImageField(upload_to='images/', blank=True, null=True, editable=False)
     
- 
     def save(self, *args, **kwargs):
         # Automatically set the solution based on the answer
         option_number = self.answer[-1]  # Extract the option number from 'optionX'
@@ -34,13 +55,13 @@ class Questions(models.Model):
             self.solution_image = f'Option {option_number}: Image - {option_image.url}' #
         else:  # If option is text
             self.solution_text = f'Option {option_number}: {option_text}'
-        
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
-        return f"{id}"
+        return f"{self.id}{self.questions_text}"
 
 
+#model to add Exams
 class Exam(models.Model):
     id = models.BigAutoField(unique=True, primary_key=True)
     exam_id = models.CharField(unique=True,max_length = 6)
@@ -51,6 +72,8 @@ class Exam(models.Model):
     total_marks = models.PositiveIntegerField()
     qualify_score = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True, help_text="Make Sure to Set Active-state while creating.")
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
     created_date = models.DateTimeField(auto_now_add=True, blank=True)
     updated_date =  models.DateTimeField(auto_now=True, blank=True)
     slug_exam = models.SlugField(blank=True)
@@ -70,6 +93,8 @@ class Otp(models.Model):
     otp = models.CharField(max_length=6, null=True, blank=True)
     otp_validated = models.BooleanField(default=False, blank=True)
 
+
+#model for UserProfile.It has onetoone relation with User Model
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_profile', null=True, blank=True)
     purchased_exams = models.ManyToManyField(Exam, blank=True, related_name='purchased_exams')
@@ -77,6 +102,7 @@ class UserProfile(models.Model):
     def __str__(self) -> str:
         return f"{self.user}"
     
+
 class PurchasedDate(models.Model):
     user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='purchased_dates')
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='purchased_dates', null=True, blank=True)
@@ -86,6 +112,7 @@ class PurchasedDate(models.Model):
     def __str__(self) -> str:
         return f"PurchasedDate for {self.user_profile}, Exam: {self.exam}"
     
+
 class UserResponse(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='userresponse')
     exam_id = models.CharField(max_length=50)
@@ -94,7 +121,7 @@ class UserResponse(models.Model):
     #  {
     # "1": "A",
     # "2": "C",
-    # "3": "B"
+    # "3": "B",
     # }
     def __str__(self) -> str:
         return f"{self.userprofile.username}-{self.exam_id}"

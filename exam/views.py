@@ -3,9 +3,12 @@ from .serializers import (UserSerializer, QuestionSerializer, ExamSerializer,
                           RegularUserLoginSerializer, AdminRegistrationSerializer,
                           AdminLoginSerializer, AddQuestionstoExamSerializer,
                           ChangePasswordSerializer,ResetPasswordEmailSerializer,ResetPasswordSerializer,CheckOTPSerializer,
-                          UserProfileSerializer, UserResponseSerializer)
+                          UserProfileSerializer, UserResponseSerializer,
+                          DifficultyLevelSerializer, QuestionTypeSerializer)
 from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveDestroyAPIView, GenericAPIView, RetrieveAPIView, ListAPIView
-from .models import Questions, Exam, Otp, UserProfile, PurchasedDate, UserResponse
+from .models import (Questions, Exam, Otp,
+                      UserProfile, PurchasedDate, UserResponse, 
+                      DifficultyLevel, QuestionType)
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -21,6 +24,9 @@ from .services import add_question, otpgenerator, Utils, checkOTP, deleteOTP
 from django.db import transaction
 from django.contrib.auth.models import User
 import logging
+from django.http import Http404
+from django.http import JsonResponse
+from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
@@ -123,36 +129,68 @@ class AdminLogoutView(APIView):
 #Admin accessible views.
 #View to create and List created Questions.
 class QuestionListCreateAPIView(ListCreateAPIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
     serializer_class = QuestionSerializer
     queryset = Questions.objects.all()
     
 #View to Look Questions in detail and Delete created Questions.
 class QuestionRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
     serializer_class = QuestionSerializer
     queryset = Questions.objects.all()
     lookup_field = 'id'
 
 #View to create and List created Exams.
 class ExamListCreateAPIView(ListCreateAPIView):
-    Authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    # Authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
     serializer_class = ExamSerializer
     queryset = Exam.objects.all()
 
 #View to Look Questions in detail and Delete created Exams.
 class ExamRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
     serializer_class = ExamSerializer
     queryset = Exam.objects.all()
     lookup_field = 'exam_id'
 
-#continue from checking the syntax of data is stored in db inorder to create a automatically question adding function.
+#View to create and List created QuestionType
+class QuestionTypeListCreateAPIView(ListCreateAPIView):
+    # Authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+    serializer_class = QuestionTypeSerializer
+    queryset = QuestionType.objects.all()
 
+
+#View to Look Questions in detail and Delete created QuestionType
+class QuestionTypeRetrieveDestroyAPIView(RetrieveDestroyAPIView):
+    # permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
+    serializer_class = QuestionTypeSerializer
+    queryset = QuestionType.objects.all()
+    lookup_field = 'id'
+
+
+#View to create and List created DifficultyLevel
+class DifficultyLevelListCreateAPIView(ListCreateAPIView):
+    # Authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+    serializer_class = DifficultyLevelSerializer
+    queryset = DifficultyLevel.objects.all()
+
+
+#View to Look Questions in detail and Delete created DifficultyLevel
+class DifficultyLevelRetrieveDestroyAPIView(RetrieveDestroyAPIView):
+    # permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
+    serializer_class = DifficultyLevelSerializer
+    queryset = DifficultyLevel.objects.all()
+    lookup_field = 'id'
+    
+#View to add questions to exams randomnly
 class AddQuestionstoExam(APIView):
     serializer_class = AddQuestionstoExamSerializer
 
@@ -161,12 +199,25 @@ class AddQuestionstoExam(APIView):
         serializer.is_valid(raise_exception=True)
 
         exam_id = request.data['exam_id']
-        exams = Exam.objects.get(exam_id = exam_id)
-        questions = Questions.objects.all()
-        add_question(exams=exams, questions=questions)
+        difficulty_level = request.data['difficulty_level']
+        question_type = request.data['question_type']
+        questions_count = int(request.data['questions_count'])
 
-        while exams.questions.count() != 20: #change the number according to the number of questions
-            add_question(exams=exams, questions=questions)
+        try:
+            exams = Exam.objects.get(exam_id=exam_id)
+        except Exam.DoesNotExist:
+            raise Http404("Exam does not exist")
+        
+        questions = Questions.objects.filter(difficulty_level = difficulty_level, question_type = question_type)
+
+        if questions.count() < questions_count:
+            response = {'success': False, 'message': 'Not enough questions available'}
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+        
+        add_question(exams=exams, questions=questions, questions_count=questions_count)
+
+        # if exams.questions.count() != questions_count: #change the number according to the number of questions
+        #     add_question(exams=exams, questions=questions, questions_count=questions_count)
 
         response = {'success':True,'message': 'Questions added successfully'}
 
@@ -369,3 +420,12 @@ class UserExamResponseAdd(APIView):
 
         except:
             return Response("User not found", status=status.HTTP_401_UNAUTHORIZED)
+
+
+#api to return the current date and time
+def current_datetime(request):
+    current_time = datetime.now()
+    response_data = {
+        'current_datetime': current_time.strftime('%Y-%m-%d %H:%M:%S')
+    }
+    return JsonResponse(response_data)

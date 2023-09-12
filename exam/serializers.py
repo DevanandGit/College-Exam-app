@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Exam, Questions, PurchasedDate, UserProfile, UserResponse
+from .models import (Exam, Questions, PurchasedDate, 
+                     UserProfile, UserResponse, DifficultyLevel, 
+                     QuestionType)
 
 
 #validate data of regular user login.
@@ -51,22 +53,45 @@ class AdminLoginSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=128)
         
 
-class ExamSerializer(serializers.ModelSerializer):
-
+#serializer to validate Difficulty level
+class DifficultyLevelSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Exam
-        fields = ['id', 'exam_id','exam_name', 'duration', 'instructions', 'questions', 'total_marks', 'qualify_score', 'is_active', 'created_date', 'updated_date']
+        model = DifficultyLevel
+        fields = ('id', 'difficulty_level')
 
+#serializer to validate Question Type
+class QuestionTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionType
+        fields = ('id', 'question_type')
 
+#serializer to validate Question data
 class QuestionSerializer(serializers.ModelSerializer):
     
+    # difficulty_level = serializers.StringRelatedField()
+    # question_type = serializers.ChoiceField(choices=QuestionType.objects.values_list('id', 'question_type'), required  =False)
     class Meta:
         model = Questions
-        fields = ['id', 'questions_text', 'questions_image', 'optionA_text', 'optionA_image', 'optionB_text', 'optionB_image', 'optionC_text', 'optionC_image', 'optionD_text', 'optionD_image', 'choose', 'answer', 'solution_text', 'solution_image']
-    
+        fields = ['id','difficulty_level', 'question_type', 'questions_text', 'questions_image', 'optionA_text', 'optionA_image', 'optionB_text', 'optionB_image', 'optionC_text', 'optionC_image', 'optionD_text', 'optionD_image', 'choose', 'answer', 'solution_text', 'solution_image']
 
+
+#serializer to validate Exam data
+class ExamSerializer(serializers.ModelSerializer):
+    questions_count = serializers.SerializerMethodField()
+    questions = QuestionSerializer(many = True, read_only = True)
+    class Meta:
+        model = Exam
+        fields = ['id', 'exam_id','exam_name', 'duration', 'instructions', 'questions_count', 'questions','total_marks', 'qualify_score', 'start_date', 'end_date','is_active', 'created_date', 'updated_date']
+
+    def get_questions_count(self, obj):
+        return obj.questions.count()
+
+#
 class AddQuestionstoExamSerializer(serializers.Serializer):
     exam_id = serializers.CharField(max_length = 6, min_length = 6)
+    question_type = serializers.ChoiceField(choices=QuestionType.objects.values_list('id', 'question_type'), required  =False)
+    difficulty_level = serializers.ChoiceField(choices=DifficultyLevel.objects.values_list('id', 'difficulty_level'), required = False)
+    questions_count = serializers.IntegerField()
 
 
 # validates the password entered for changing password.

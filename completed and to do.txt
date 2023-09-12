@@ -6,6 +6,12 @@
 6.purchased exams
 7.change password, reset password using mailing otp system.
 8.UserProfiles.
+9.start date end date
+10.ehtra question oru exam idanam enn oru field
+11.categorise question based on difficulty level-- 
+12. question type
+13.question add akanum delete akanum pattanam
+14.date and time api
 
 
 to-do:

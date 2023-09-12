@@ -4,8 +4,11 @@ from .views import (UserRegistration, RegularUserLoginView, RegularUserLogoutVie
                     QuestionListCreateAPIView, QuestionRetrieveDestroyAPIView,ExamListCreateAPIView, 
                     ExamRetrieveDestroyAPIView, AddQuestionstoExam,
                     ChangePasswordView, PasswordResetRequest, CheckOTP, ResetPasswordView,
-                    AssignExam, UserProfileView, PurchaseHistoryView, UserExamResponseAdd)
+                    AssignExam, UserProfileView, PurchaseHistoryView, UserExamResponseAdd, 
+                    QuestionTypeListCreateAPIView, QuestionTypeRetrieveDestroyAPIView, 
+                    DifficultyLevelListCreateAPIView, DifficultyLevelRetrieveDestroyAPIView)
 
+from .views import current_datetime
 urlpatterns = [
     path('user-reg/', UserRegistration.as_view(), name = 'user-reg'),
     path('user-login/', RegularUserLoginView.as_view(), name = 'user-login'),
@@ -21,7 +24,13 @@ urlpatterns = [
     path('exam-add-list/<str:exam_id>/', ExamRetrieveDestroyAPIView.as_view(), name='exam-retrieve-delete'),
     path('add-question-to-exam/', AddQuestionstoExam.as_view(), name = 'add-question-to-exam'),
 
+    path('questiontype-add-list/', QuestionTypeListCreateAPIView.as_view(), name='questiontype-add-list'),
+    path('questiontype-add-list/<int:id>/', QuestionTypeRetrieveDestroyAPIView.as_view(), name='questiontype-retrieve-delete'),
+    path('difficulty_level-add-list/', DifficultyLevelListCreateAPIView.as_view(), name='difficulty_level-add-list'),
+    path('difficulty_level-add-list/<int:id>/', DifficultyLevelRetrieveDestroyAPIView.as_view(), name='difficulty_level-retrieve-delete'),
+
     path('assign-exam/', AssignExam.as_view(), name = 'assign-exam'),
+    path('current-datetime/', current_datetime, name='current_datetime'),
 
     path('userlist/<str:username>/', UserProfileView.as_view(), name='user_profile'),
     path('userlist/<str:username>/purchase_history/', PurchaseHistoryView.as_view(), name='purchase_history'),

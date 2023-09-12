@@ -9,14 +9,25 @@ class CustomDuration(DurationField):
         hours, minutes, seconds = formatted_duration.split(":")
         return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
     
-def add_question(exams, questions):
-    total = 20 #change the number according to the number of questions
-    no_of_questions = exams.questions.count()
-    no_of_ques_to_add = total-no_of_questions
+def add_question(exams, questions, questions_count):
+    # for i in range(questions_count):
+    #     test = random.choice(questions)
+    #     exams.questions.add(test)
 
-    for i in range(no_of_ques_to_add):
-        test = random.choice(questions)
-        exams.questions.add(test)
+    # if exams.questions.count() != questions_count:
+    #     remaining = questions_count - exams.questions.count()
+    #     for i in range(remaining):
+    #         test = random.choice(questions)
+    #         exams.questions.add(test)
+    question_ids = list(questions.values_list('id', flat=True))
+    print(question_ids)
+    # Shuffle the list of question IDs to randomize the selection
+    random.shuffle(question_ids)
+    
+    questions_to_add = question_ids[:questions_count]
+    print(f"questions to Add:{questions_to_add}")
+    # Add selected questions to the exam
+    exams.questions.add(*questions_to_add)
 
 
 #method to send mail.
