@@ -4,7 +4,7 @@ from .serializers import (UserSerializer, QuestionSerializer, ExamSerializer,
                           AdminLoginSerializer, AddQuestionstoExamSerializer,
                           ChangePasswordSerializer,ResetPasswordEmailSerializer,ResetPasswordSerializer,CheckOTPSerializer,
                           UserProfileSerializer, UserResponseSerializer,
-                          DifficultyLevelSerializer, QuestionTypeSerializer)
+                          DifficultyLevelSerializer, QuestionTypeSerializer, ExamDetailSerializer)
 from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveDestroyAPIView, GenericAPIView, RetrieveAPIView, ListAPIView
 from .models import (Questions, Exam, Otp,
                       UserProfile, PurchasedDate, UserResponse, 
@@ -80,8 +80,8 @@ class RegularUserLoginView(APIView):
 
 #Regular user logout view.
 class RegularUserLogoutView(APIView):
-    permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         # Delete the token associated with the user
         Token.objects.filter(user=request.user).delete()
@@ -129,31 +129,32 @@ class AdminLogoutView(APIView):
 #Admin accessible views.
 #View to create and List created Questions.
 class QuestionListCreateAPIView(ListCreateAPIView):
-    permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = QuestionSerializer
     queryset = Questions.objects.all()
     
 #View to Look Questions in detail and Delete created Questions.
 class QuestionRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = QuestionSerializer
     queryset = Questions.objects.all()
     lookup_field = 'id'
 
 #View to create and List created Exams.
 class ExamListCreateAPIView(ListCreateAPIView):
-    Authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    # Authentication_classes = [TokenAuthentication]
     serializer_class = ExamSerializer
     queryset = Exam.objects.all()
 
 #View to Look Questions in detail and Delete created Exams.
 class ExamRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
-    serializer_class = ExamSerializer
+    permission_classes = [IsAuthenticated]
+    serializer_class = ExamDetailSerializer
     queryset = Exam.objects.all()
     lookup_field = 'exam_id'
 
@@ -167,8 +168,8 @@ class QuestionTypeListCreateAPIView(ListCreateAPIView):
 
 #View to Look Questions in detail and Delete created QuestionType
 class QuestionTypeRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    permission_classes = [IsAdminUser]
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     serializer_class = QuestionTypeSerializer
     queryset = QuestionType.objects.all()
     lookup_field = 'id'
@@ -184,16 +185,16 @@ class DifficultyLevelListCreateAPIView(ListCreateAPIView):
 
 #View to Look Questions in detail and Delete created DifficultyLevel
 class DifficultyLevelRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    permission_classes = [IsAdminUser]
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     serializer_class = DifficultyLevelSerializer
     queryset = DifficultyLevel.objects.all()
     lookup_field = 'id'
     
 #View to add questions to exams randomnly
 class AddQuestionstoExam(APIView):
-    permission_classes = [IsAdminUser]
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     serializer_class = AddQuestionstoExamSerializer
 
     def post(self, request):
@@ -371,8 +372,8 @@ class ResetPasswordView(APIView):
 
 #User Profile View.
 class UserProfileView(RetrieveAPIView):
-    permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
     lookup_field = 'username'
     def get_queryset(self):

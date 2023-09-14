@@ -78,6 +78,17 @@ class QuestionSerializer(serializers.ModelSerializer):
 #serializer to validate Exam data
 class ExamSerializer(serializers.ModelSerializer):
     questions_count = serializers.SerializerMethodField()
+    # questions = QuestionSerializer(many = True, read_only = True)
+    class Meta:
+        model = Exam
+        fields = ['id', 'exam_id','exam_name', 'duration', 'instructions', 'questions_count', 'questions','total_marks', 'qualify_score', 'start_date', 'end_date','is_active', 'created_date', 'updated_date']
+
+    def get_questions_count(self, obj):
+        return obj.questions.count()
+    
+#serializer to validate Exam data in detail
+class ExamDetailSerializer(serializers.ModelSerializer):
+    questions_count = serializers.SerializerMethodField()
     questions = QuestionSerializer(many = True, read_only = True)
     class Meta:
         model = Exam
@@ -86,7 +97,7 @@ class ExamSerializer(serializers.ModelSerializer):
     def get_questions_count(self, obj):
         return obj.questions.count()
 
-#
+
 class AddQuestionstoExamSerializer(serializers.Serializer):
     exam_id = serializers.CharField(max_length = 6, min_length = 6)
     question_type = serializers.ChoiceField(choices=QuestionType.objects.values_list('id', 'question_type'), required  =False)
